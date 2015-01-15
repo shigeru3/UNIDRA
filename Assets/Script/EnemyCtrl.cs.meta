@@ -1,8 +1,9 @@
 fileFormatVersion: 2
-guid: e33b3e043c6521f4ab93366fa5789b6b
+guid: c22afa843649b4f72a12ef415614a499
 MonoImporter:
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - hitEffect: {fileID: 127858, guid: 34dfe21ecfcf049eb89e5a101102d277, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
