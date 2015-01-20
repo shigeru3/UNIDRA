@@ -7,9 +7,20 @@ public class GameRuleCtrl : MonoBehaviour {
 	// ゲームオーバーフラグ
 	public bool gameOver = false;
 	// ゲームクリア
-    public bool gameClear = false;
+	public bool gameClear = false;
 	// シーン移行時間
 	public float sceneChangeTime = 3.0f;
+
+	public AudioClip clearSeClip;
+	AudioSource clearSeAudio;
+
+	void Start()
+	{
+		// オーディオの初期化.
+		clearSeAudio = gameObject.AddComponent<AudioSource>();
+		clearSeAudio.loop = false;
+		clearSeAudio.clip = clearSeClip;
+	}
 
 	void Update()
 	{
@@ -29,7 +40,7 @@ public class GameRuleCtrl : MonoBehaviour {
 		}
 
 	}
-	
+
 	public void GameOver()
 	{
 		gameOver = true;
@@ -37,5 +48,8 @@ public class GameRuleCtrl : MonoBehaviour {
 	public void GameClear()
 	{
 		gameClear = true;
+
+		// オーディオ再生.
+		clearSeAudio.Play ();
 	}
 }
