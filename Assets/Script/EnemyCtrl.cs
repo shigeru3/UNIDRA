@@ -6,9 +6,6 @@ public class EnemyCtrl : MonoBehaviour {
 	CharaAnimation charaAnimation;
 	CharacterMove characterMove;
 	Transform attackTarget;
-	GameRuleCtrl gameRuleCtrl;
-	public GameObject hitEffect;
-
 	// 待機時間は２秒とする
 	public float waitBaseTime = 2.0f;
 	// 残り待機時間
@@ -20,35 +17,43 @@ public class EnemyCtrl : MonoBehaviour {
 	// 複数のアイテムを入れれるように配列にしましょう。
 	public GameObject[] dropItemPrefab;
 
+	// ゲームルール.
+	GameRuleCtrl gameRuleCtrl;
+
+	public GameObject hitEffect;
+
 	// ステートの種類.
 	enum State {
 		Walking,	// 探索
 		Chasing,	// 追跡
 		Attacking,	// 攻撃
-		Died,       // 死亡
+		Died,		// 死亡
 	};
 
 	State state = State.Walking;		// 現在のステート.
 	State nextState = State.Walking;	// 次のステート.
 
 	public AudioClip deathSeClip;
-	AudioSource deathSeAudio;
-
+	public AudioClip attackSeClip;
 
 	// Use this for initialization
 	void Start () {
 		status = GetComponent<CharacterStatus>();
 		charaAnimation = GetComponent<CharaAnimation>();
-		characterMove = GetComponent<CharacterMove>();
-		gameRuleCtrl = FindObjectOfType<GameRuleCtrl>();
+		characterMove = GetComponent<CharacterMove>(); 
 		// 初期位置を保持
 		basePosition = transform.position;
 		// 待機時間
 		waitTime = waitBaseTime;
+
+		gameRuleCtrl = FindObjectOfType<GameRuleCtrl>();
 	}
 
 	// Update is called once per frame
 	void Update () {
+		if (!networkView.isMine)
+			return;
+
 		switch (state) {
 		case State.Walking:
 			Walking();
@@ -59,6 +64,7 @@ public class EnemyCtrl : MonoBehaviour {
 		case State.Attacking:
 			Attacking();
 			break;
+
 		}
 
 		if (state != nextState)
@@ -155,6 +161,10 @@ public class EnemyCtrl : MonoBehaviour {
 
 		// 移動を止める.
 		SendMessage("StopMove");
+
+		// 攻撃SEを鳴らす.
+		AudioSource.PlayClipAtPoint(attackSeClip,transform.position);
+
 	}
 
 	// 攻撃中の処理.
@@ -166,39 +176,48 @@ public class EnemyCtrl : MonoBehaviour {
 		waitTime = Random.Range(waitBaseTime, waitBaseTime * 2.0f);
 		// ターゲットをリセットする
 		attackTarget = null;
+
 	}
 
 	void dropItem()
 	{
 		if (dropItemPrefab.Length == 0) { return; }
 		GameObject dropItem = dropItemPrefab[Random.Range(0, dropItemPrefab.Length)];
-		Instantiate(dropItem, transform.position, Quaternion.identity);
+		Network.Instantiate(dropItem, transform.position, transform.rotation,0);
 	}
 
 	void Died()
 	{
 		status.died = true;
 		dropItem();
-		Destroy(gameObject);
-		if (gameObject.tag == "Boss")
-		{
+		AudioSource.PlayClipAtPoint(deathSeClip,transform.position);
+		if( gameObject.tag == "Boss" ) {
 			gameRuleCtrl.GameClear();
 		}
-
-		// オーディオ再生
-		AudioSource.PlayClipAtPoint(deathSeClip, transform.position);
+		Network.Destroy(gameObject);
+		Network.RemoveRPCs(networkView.viewID);
 	}
 
 	void Damage(AttackArea.AttackInfo attackInfo)
 	{
-		GameObject effect = Instantiate(hitEffect, transform.position, Quaternion.identity) as GameObject;
+		// エフェクトの発生.
+		GameObject effect = Instantiate ( hitEffect, transform.position,Quaternion.identity ) as GameObject;
 		effect.transform.localPosition = transform.position + new Vector3(0.0f, 0.5f, 0.0f);
 		Destroy(effect, 0.3f);
 
-		status.HP -= attackInfo.attackPower;
+		if (networkView.isMine)
+			DamageMine(attackInfo.attackPower);
+		else
+			networkView.RPC("DamageMine",networkView.owner,attackInfo.attackPower);
+	}
+
+	[RPC]
+	void DamageMine(int damage)
+	{
+		status.HP -= damage;
 		if (status.HP <= 0) {
 			status.HP = 0;
-			// 体力０なので死亡
+			// 体力０なので死亡ステートへ.
 			ChangeState(State.Died);
 		}
 	}
@@ -213,5 +232,20 @@ public class EnemyCtrl : MonoBehaviour {
 	public void SetAttackTarget(Transform target)
 	{
 		attackTarget = target;
+	}
+
+	void OnNetworkInstantiate(NetworkMessageInfo info) {
+		if (!networkView.isMine) {
+			CharacterMove move = GetComponent<CharacterMove>();
+			Destroy(move);
+
+			AttackArea[] attackAreas = GetComponentsInChildren<AttackArea>();
+			foreach (AttackArea attackArea in attackAreas) {
+				Destroy(attackArea);
+			}
+
+			AttackAreaActivator attackAreaActivator = GetComponent<AttackAreaActivator>();
+			Destroy(attackAreaActivator);
+		}
 	}
 }

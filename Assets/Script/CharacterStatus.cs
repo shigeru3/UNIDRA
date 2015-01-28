@@ -1,8 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class CharacterStatus : MonoBehaviour
-{
+public class CharacterStatus : MonoBehaviour {
 
 	//---------- 攻撃の章で使用します. ----------
 	// 体力.
@@ -24,15 +23,22 @@ public class CharacterStatus : MonoBehaviour
 	public bool attacking = false;
 	public bool died = false;
 
-	// 攻撃力強化
+	// 攻撃力強化.
 	public bool powerBoost = false;
-	// 攻撃強化時間
+	// 攻撃強化時間.
 	float powerBoostTime = 0.0f;
 
-	// 攻撃力強化エフェクト
+	// パワーアップエフェクト
 	ParticleSystem powerUpEffect;
 
-	// アイテム取得
+	void Start() {
+		if (gameObject.tag == "Player" ){
+			powerUpEffect = transform.Find ("PowerUpEffect").GetComponent<ParticleSystem>();
+		}
+	}
+
+	// アイテム取得.
+	[RPC]
 	public void GetItem(DropItem.ItemKind itemKind)
 	{
 		switch (itemKind)
@@ -42,24 +48,22 @@ public class CharacterStatus : MonoBehaviour
 			powerUpEffect.Play ();
 			break;
 		case DropItem.ItemKind.Heal:
-			// MaxHPの半分回復
+			// MaxHPの半分回復.
 			HP = Mathf.Min(HP + MaxHP / 2, MaxHP);
 			break;
 		}
 	}
 
-	void Start()
+	// 名前を設定する.
+	[RPC]
+	public void SetName(string name)
 	{
-		if (gameObject.tag == "Player")
-		{
-			powerUpEffect = transform.Find("PowerUpEffect").GetComponent<ParticleSystem>();
-		}
+		characterName = name;
 	}
 
 	void Update()
 	{
-		if (gameObject.tag != "Player")
-		{
+		if( gameObject.tag != "Player" ){ 
 			return;
 		}
 		powerBoost = false;
@@ -67,11 +71,10 @@ public class CharacterStatus : MonoBehaviour
 		{
 			powerBoost = true;
 			powerBoostTime = Mathf.Max(powerBoostTime - Time.deltaTime, 0.0f);
-		}
-		else
-		{
-			powerUpEffect.Stop();
+		} else {
+			powerUpEffect.Stop ();
 		}
 	}
+
 
 }

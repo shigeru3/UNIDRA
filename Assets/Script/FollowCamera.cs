@@ -26,19 +26,19 @@ public class FollowCamera : MonoBehaviour {
 			verticalAngle -= delta.y * anglePerPixel;
 			verticalAngle = Mathf.Clamp(verticalAngle,-60.0f,60.0f);
 		}
-		
+
 		// カメラを位置と回転を更新する.
 		if (lookTarget != null) {
 			Vector3 lookPosition = lookTarget.position + offset;
 			// 注視対象からの相対位置を求める.
 			Vector3 relativePos = Quaternion.Euler(verticalAngle,horizontalAngle,0) *  new Vector3(0,0,-distance);
-			
+
 			// 注視対象の位置にオフセット加算した位置に移動させる.
 			transform.position = lookPosition + relativePos ;
-			
+
 			// 注視対象を注視させる.
 			transform.LookAt(lookPosition);
-			
+
 			// 障害物を避ける.
 			RaycastHit hitInfo;
 			if (Physics.Linecast(lookPosition,transform.position,out hitInfo,1<<LayerMask.NameToLayer("Ground")))

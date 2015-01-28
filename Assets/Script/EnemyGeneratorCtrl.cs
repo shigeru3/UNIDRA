@@ -21,7 +21,8 @@ public class EnemyGeneratorCtrl : MonoBehaviour {
 	IEnumerator Exec()
 	{
 		while(true){ 
-			Generate();
+			if (Network.isServer)
+				Generate();
 			yield return new WaitForSeconds( 3.0f );
 		}
 	}
@@ -32,10 +33,10 @@ public class EnemyGeneratorCtrl : MonoBehaviour {
 		{
 			if( existEnemys[enemyCount] == null ){
 				// 敵作成
-				existEnemys[enemyCount] = Instantiate(enemyPrefab,transform.position,transform.rotation) as GameObject;
+				existEnemys[enemyCount] = Network.Instantiate(enemyPrefab,transform.position,transform.rotation,0) as GameObject;
 				return;
 			}
 		}
 	}
-	
+
 }
